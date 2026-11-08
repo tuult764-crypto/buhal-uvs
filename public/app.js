@@ -8,7 +8,7 @@ const el = (t, a = {}, ...c) => {
     else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
     else if (v !== false && v != null) e.setAttribute(k, v);
   }
-  c.flat().forEach((x) => { if (x != null) e.append(x.nodeType ? x : document.createTextNode(x)); });
+  c.flat().forEach((x) => { if (x != null && x !== false) e.append(x.nodeType ? x : document.createTextNode(x)); });
   return e;
 };
 const toast = (msg) => { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('on'), 3200); };
