@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Бухал өвс</title>
+<meta name="theme-color" content="#130f2b">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Noto+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body data-world="night">
+<div class="sky"></div>
+<svg class="forest" viewBox="0 0 800 400" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <defs>
+    <linearGradient id="fg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1b52"/><stop offset="1" stop-color="#130f2b"/></linearGradient>
+    <linearGradient id="fg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1440"/><stop offset="1" stop-color="#0d0a20"/></linearGradient>
+  </defs>
+  <path fill="url(#fg1)" opacity=".7" d="M0 260 L70 190 L120 235 L210 150 L290 240 L380 170 L470 245 L560 160 L650 235 L730 180 L800 240 V400 H0Z"/>
+  <g fill="url(#fg2)">
+    <path d="M-10 400 V120 Q30 90 40 400Z"/><path d="M60 400 V210 Q85 190 100 400Z"/>
+    <path d="M700 400 V170 Q730 140 760 400Z"/><path d="M770 400 V90 Q800 70 820 400Z"/>
+    <path d="M0 400 V330 Q200 290 400 335 T800 320 V400Z"/>
+  </g>
+</svg>
+<canvas id="fx" aria-hidden="true"></canvas>
+<main id="app"></main>
+<dialog id="dlg"></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/app.js"></script>
+</body>
+</html>
