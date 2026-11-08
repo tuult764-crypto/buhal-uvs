@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS entries (
   client_id TEXT NOT NULL, stage INTEGER NOT NULL, step INTEGER NOT NULL DEFAULT 0,
   text TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
   UNIQUE(user_id, client_id));
+CREATE TABLE IF NOT EXISTS payments (
+  id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_entries_user_stage ON entries(user_id, stage);
 `);
 
@@ -123,10 +126,23 @@ app.post('/api/login', async (req, res) => {
 
 app.post('/api/logout', (req, res) => { res.append('Set-Cookie', 'bv=; HttpOnly; Path=/; Max-Age=0'); res.json({ ok: true }); });
 
+const payCode = (id) => 'BV' + (1000 + id);
+// Үнэ: PRICE_MNT, SALE_PRICE_MNT орчны хувьсагчаар өөрчилнө. SALE_PRICE_MNT=0 бол хямдрал харагдахгүй.
+const PRICE = process.env.PRICE_MNT || '15000';
+const saleRaw = process.env.SALE_PRICE_MNT === undefined ? '10000' : process.env.SALE_PRICE_MNT;
+const SALE = Number(saleRaw) > 0 ? saleRaw : null;
 app.get('/api/me', auth, (req, res) => {
   const u = db.prepare('SELECT id,name,email FROM users WHERE id=?').get(req.uid);
   const access = getAccess(req.uid);
-  res.json({ user: u, access, write: access.status === 'active' ? writeMap(access.day) : {} });
+  const requested = !!db.prepare("SELECT 1 FROM payments WHERE user_id=? AND status='pending'").get(req.uid);
+  res.json({ user: u, access, write: access.status === 'active' ? writeMap(access.day) : {},
+    payment: { code: payCode(u.id), price: PRICE, salePrice: SALE, requested } });
+});
+
+app.post('/api/payment-request', auth, (req, res) => {
+  if (!db.prepare("SELECT 1 FROM payments WHERE user_id=? AND status='pending'").get(req.uid))
+    db.prepare('INSERT INTO payments(user_id,status,created_at) VALUES(?,?,?)').run(req.uid, 'pending', Date.now());
+  res.json({ ok: true });
 });
 
 /* ---------- Бичлэг ---------- */
@@ -175,14 +191,35 @@ app.delete('/api/account', auth, async (req, res) => {
   res.json({ ok: true });
 });
 
-/* ---------- Админ: эрх олгох (төлбөр баталгаажсаны дараа) ---------- */
+/* ---------- Админ: төлбөр шалгаад эрх олгох ---------- */
+const adminFails = new Map();
+function adminOk(req, res) {
+  const now = Date.now();
+  const f = adminFails.get(req.ip) || { n: 0, reset: now + 15 * 60000 };
+  if (now > f.reset) { f.n = 0; f.reset = now + 15 * 60000; }
+  if (f.n >= 10) { res.status(429).json({ error: 'Хэт олон буруу оролдлоо. 15 минутын дараа дахин оролдоно уу.' }); return false; }
+  const h = (x) => crypto.createHash('sha256').update(String(x)).digest();
+  const ok = ADMIN_KEY && crypto.timingSafeEqual(h(req.get('x-admin-key') || ''), h(ADMIN_KEY));
+  if (!ok) { f.n++; adminFails.set(req.ip, f); res.status(403).json({ error: 'Зөвшөөрөлгүй.' }); return false; }
+  return true;
+}
+
+app.get('/api/admin/payments', (req, res) => {
+  if (!adminOk(req, res)) return;
+  const rows = db.prepare("SELECT p.id, p.user_id, p.created_at, u.name, u.email FROM payments p JOIN users u ON u.id=p.user_id WHERE p.status='pending' ORDER BY p.created_at").all();
+  res.json({ payments: rows.map((r) => ({ id: r.id, code: payCode(r.user_id), name: r.name, email: r.email, created_at: r.created_at })) });
+});
+
 app.post('/api/admin/grant', (req, res) => {
-  const h = (s) => crypto.createHash('sha256').update(String(s)).digest();
-  if (!ADMIN_KEY || !crypto.timingSafeEqual(h(req.get('x-admin-key') || ''), h(ADMIN_KEY))) return res.status(403).json({ error: 'Зөвшөөрөлгүй.' });
-  const u = db.prepare('SELECT id FROM users WHERE email=?').get(String(req.body.email || '').trim().toLowerCase());
+  if (!adminOk(req, res)) return;
+  const q = String(req.body.email || req.body.code || '').trim();
+  const m = /^BV(\d+)$/i.exec(q);
+  const u = m ? db.prepare('SELECT id FROM users WHERE id=?').get(Number(m[1]) - 1000)
+              : db.prepare('SELECT id FROM users WHERE email=?').get(q.toLowerCase());
   if (!u) return res.status(404).json({ error: 'Хэрэглэгч олдсонгүй.' });
   const now = Date.now();
   db.prepare('INSERT INTO access_periods(user_id,starts_at,ends_at,created_at) VALUES(?,?,?,?)').run(u.id, now, now + 30 * DAY, now);
+  db.prepare("UPDATE payments SET status='done' WHERE user_id=? AND status='pending'").run(u.id);
   res.json({ ok: true, startsAt: now, endsAt: now + 30 * DAY });
 });
 
