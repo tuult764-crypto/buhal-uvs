@@ -137,7 +137,7 @@ function topBar() {
   return el('div', { class: 'top' },
     el('span', { class: 'brand' }, 'Бухал өвс'),
     el('div', { class: 'row' },
-      a.status === 'active' && el('span', { class: 'pill' }, `${a.day}-р өдөр / 30`),
+      a.status === 'active' && el('span', { class: 'pill' }, a.tester ? 'Шалгагчийн горим' : `${a.day}-р өдөр / 30`),
       el('button', { class: 'btn ghost small', onclick: showSettings }, 'Миний мэдээлэл'),
       el('button', { class: 'btn ghost small', onclick: logout }, 'Гарах')));
 }
@@ -201,7 +201,7 @@ function showStage(n) {
   if (n !== 1) return showHome();
   const st = STAGES[0]; setWorld(st.world);
   const writable = !!S.me.write[1];
-  const step = S.me.access.day >= 28 ? 1 : 0;
+  const step = !S.me.access.tester && S.me.access.day >= 28 ? 1 : 0;
   const DK = `bv_draft_${S.me.user.id}_1_${step}`;
   const list = el('ul', { class: 'entries' });
   const draw = () => {
@@ -247,7 +247,7 @@ function showStage(n) {
 
   draw();
   mount(
-    el('div', { class: 'top' }, el('button', { class: 'btn ghost small', onclick: showHome }, 'Аяллын зам руу'), el('span', { class: 'pill' }, `${S.me.access.day}-р өдөр / 30`)),
+    el('div', { class: 'top' }, el('button', { class: 'btn ghost small', onclick: showHome }, 'Аяллын зам руу'), el('span', { class: 'pill' }, S.me.access.tester ? 'Шалгагчийн горим' : `${S.me.access.day}-р өдөр / 30`)),
     el('h2', {}, st.title), el('div', { class: 'muted', style: 'margin:-6px 0 14px' }, st.place),
     el('div', { class: 'quote' }, 'Одоо чи хэн нэгэнд таалагдах гэж хичээх шаардлагагүй. Зөв, буруу бодол гэж санаа зоволтгүй. Хэний ч өмнө өөрийгөө зөвтгөх шаардлагагүй. Зүгээр л дотор байгаа бүхнээ бич.'),
     el('p', { class: 'muted' }, 'Хэн ч мэдэхгүй, юунаас ч эмээхгүй. Таны бичсэн зүйлийг зөвхөн та харна.'),
