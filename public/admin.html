@@ -12,15 +12,19 @@
 <main id="app">
   <div class="top"><span class="brand">Бухал өвс</span><a class="btn ghost small" href="/" style="text-decoration:none">Нүүр хуудас</a></div>
   <h2>30 хоногийн эрх олгох</h2>
-  <p class="muted">Төлбөр баталгаажсан хэрэглэгчийн и-мэйлийг оруулбал өнөөдрөөс эхлэн 30 хоногийн эрх нээгдэнэ.</p>
+  <p class="muted">Банкны гүйлгээний утга дээрх и-мэйлийг бичиж эрх нээнэ.</p>
   <form id="f" class="panel">
     <label for="key">Админ түлхүүр</label>
     <input id="key" type="password" autocomplete="off" required>
-    <label for="email">Хэрэглэгчийн и-мэйл</label>
-    <input id="email" type="email" autocomplete="off" required>
-    <div class="row" style="margin-top:18px"><button class="btn" type="submit">Эрх олгох</button></div>
+    <label for="who">Гүйлгээний утга дахь и-мэйл</label>
+    <input id="who" type="text" autocomplete="off" required>
+    <div class="row" style="margin-top:18px">
+      <button class="btn" type="submit">Эрх олгох</button>
+      <button class="btn ghost" type="button" id="load">Хүлээгдэж буй хүсэлтүүд</button>
+    </div>
     <p id="msg" role="status" style="margin-top:14px"></p>
   </form>
+  <ul id="list" class="entries"></ul>
 </main>
 <script src="/admin.js"></script>
 </body>
