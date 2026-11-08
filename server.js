@@ -78,8 +78,12 @@ function limited(key) {
 }
 
 /* ---------- 30 хоногийн эрх (зөвхөн сервер талд шалгана) ---------- */
+// Шалгагчийн и-мэйл: бүх үе шат нээлттэй, өдрийн хязгааргүй (TESTER_EMAILS орчны хувьсагчаар өөрчилнө)
+const TESTERS = new Set((process.env.TESTER_EMAILS || 'tuult764@gmail.com').toLowerCase().split(',').map((x) => x.trim()).filter(Boolean));
 function getAccess(uid) {
   const now = Date.now();
+  const me = db.prepare('SELECT email FROM users WHERE id=?').get(uid);
+  if (me && TESTERS.has(me.email)) return { status: 'active', day: 30, tester: true, startsAt: now, endsAt: now + 30 * DAY, daysLeft: 30 };
   const a = db.prepare('SELECT * FROM access_periods WHERE user_id=? ORDER BY ends_at DESC LIMIT 1').get(uid);
   if (!a) return { status: 'none' };
   if (now < a.starts_at) return { status: 'pending', startsAt: a.starts_at, endsAt: a.ends_at };
@@ -135,7 +139,7 @@ app.get('/api/me', auth, (req, res) => {
   const u = db.prepare('SELECT id,name,email FROM users WHERE id=?').get(req.uid);
   const access = getAccess(req.uid);
   const requested = !!db.prepare("SELECT 1 FROM payments WHERE user_id=? AND status='pending'").get(req.uid);
-  res.json({ user: u, access, write: access.status === 'active' ? writeMap(access.day) : {},
+  res.json({ user: u, access, write: access.status === 'active' ? (access.tester ? writeMap(15) && { 1: true, 2: true, 3: true, 4: true, 5: true } : writeMap(access.day)) : {},
     payment: { code: payCode(u.id), price: PRICE, salePrice: SALE, requested } });
 });
 
@@ -165,7 +169,7 @@ app.post('/api/entries', auth, active, (req, res) => {
   if (text.length > 5000) return res.status(400).json({ error: 'Бичлэг хэт урт байна (5000 тэмдэгтээс бага).' });
   const now = Date.now();
   const ex = db.prepare('SELECT stage FROM entries WHERE user_id=? AND client_id=?').get(req.uid, client_id);
-  if (!canWrite(ex ? ex.stage : stage, req.access.day)) return res.status(403).json({ error: 'Энэ үе шатад одоогоор бичих боломжгүй байна.' });
+  if (!req.access.tester && !canWrite(ex ? ex.stage : stage, req.access.day)) return res.status(403).json({ error: 'Энэ үе шатад одоогоор бичих боломжгүй байна.' });
   if (ex) db.prepare('UPDATE entries SET text=?, updated_at=? WHERE user_id=? AND client_id=?').run(text, now, req.uid, client_id);
   else db.prepare('INSERT INTO entries(user_id,client_id,stage,step,text,created_at,updated_at) VALUES(?,?,?,?,?,?,?)').run(req.uid, client_id, stage, step, text, now, now);
   res.json({ ok: true });
