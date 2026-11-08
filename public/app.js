@@ -46,7 +46,7 @@ const STAGES = [
   { n: 4, world: 'peak', place: 'Одот уул', title: 'Миний хүсэл', opens: 3 },
   { n: 5, world: 'gate', place: 'Алтан хаалга', title: 'Миний аяллын төгсгөл', opens: 28 }
 ];
-const READY = [1]; // зөвхөн бэлэн болсон үе шатууд нээгдэнэ
+const READY = [1, 2]; // зөвхөн бэлэн болсон үе шатууд нээгдэнэ
 
 const S = { me: null, entries: [], mode: 'login' };
 
@@ -198,6 +198,7 @@ function showHome() {
 
 /* ===== 1-р үе шат ===== */
 function showStage(n) {
+  if (n === 2) return showStage2();
   if (n !== 1) return showHome();
   const st = STAGES[0]; setWorld(st.world);
   const writable = !!S.me.write[1];
@@ -229,6 +230,8 @@ function showStage(n) {
     const remove = async () => {
       if (!(await confirmBox('Энэ бичлэгийг устгах уу?', 'Устгасан бичлэгийг буцааж сэргээх боломжгүй.', 'Устгах'))) return;
       S.entries = S.entries.filter((x) => x.client_id !== e.client_id);
+      const s2 = 's2-' + e.client_id; // энэ бичлэгт холбогдох 2-р үе шатны хувилбарыг хамт устгана
+      if (S.entries.some((x) => x.client_id === s2)) { S.entries = S.entries.filter((x) => x.client_id !== s2); enqueue({ t: 'del', uid: S.me.user.id, client_id: s2 }); }
       enqueue({ t: 'del', uid: S.me.user.id, client_id: e.client_id }); draw();
     };
     view(); return li;
@@ -257,6 +260,79 @@ function showStage(n) {
           el('div', { class: 'row', style: 'margin-top:12px' }, el('button', { class: 'btn', onclick: add }, 'Жагсаалтад нэмэх'), el('span', { class: 'muted' }, 'Нэг дор олон зүйл бичиж болно.')))
       : el('p', { class: 'panel muted' }, 'Энэ үе шатад одоо бичих цаг биш байна. 28-р өдрөөс дахин нээгдэнэ. Одоохондоо бичсэнээ унших боломжтой.'),
     list, el('div', { id: 'save-state', class: 'save-state' })
+  );
+  setStatus();
+}
+
+/* ===== 2-р үе шат: Буруутныг өөрөөсөө хайх ===== */
+// «Дарга намайг үл тоодог» -> «Би өөрийгөө үл тоодог». Зөвхөн ойлгомжтой хэлбэрийг санал болгоно, бусад үед хэрэглэгч өөрөө бичнэ.
+const SELF = { 'намайг': 'өөрийгөө', 'надад': 'өөртөө', 'надтай': 'өөртэйгөө', 'надаас': 'өөрөөсөө', 'миний': 'өөрийнхөө' };
+function suggest(text) {
+  const w = text.trim().replace(/\s+/g, ' ').split(' ');
+  if (w.length < 3) return '';
+  for (let i = 0; i < w.length; i++) {
+    const m = /^(.*?)([.,!?;:»")]*)$/.exec(w[i]); const key = m[1].toLowerCase();
+    if (key === 'би') return '';
+    if (SELF[key]) {
+      if (i === 0) return '';
+      const rest = w.slice(i); rest[0] = SELF[key] + m[2];
+      return 'Би ' + rest.join(' ');
+    }
+    if (key === 'над' && (w[i + 1] || '').toLowerCase().startsWith('руу')) {
+      if (i === 0) return '';
+      const rest = w.slice(i); rest[0] = 'өөр'; rest[1] = rest[1].replace(/^руу/i, 'рүүгээ');
+      return 'Би ' + rest.join(' ');
+    }
+  }
+  return '';
+}
+
+function showStage2() {
+  const st = STAGES[1]; setWorld(st.world);
+  const writable = !!S.me.write[2];
+  const srcs = S.entries.filter((e) => e.stage === 1).sort((a, b) => a.created_at - b.created_at);
+  const saved = {};
+  S.entries.filter((e) => e.stage === 2).forEach((e) => { try { const j = JSON.parse(e.text); if (j && j.src) saved[j.src] = j; } catch {} });
+  const CH = [['true', 'Үнэн'], ['false', 'Үнэн биш'], ['unsure', 'Эргэлзэж байна']];
+
+  const card = (src) => {
+    const cid = 's2-' + src.client_id, rec = saved[src.client_id];
+    const sug = rec ? '' : suggest(src.text);
+    let choice = rec ? rec.choice : null, timer;
+    const ta = el('textarea', { maxlength: 1000, disabled: !writable, 'aria-label': 'Өөр рүүгээ чиглүүлсэн өгүүлбэр', placeholder: 'Өөрийн үгээр «Би...» гэж эхэлж бичнэ үү.', style: 'min-height:110px' });
+    ta.value = rec ? rec.text : sug;
+    const persist = () => {
+      clearTimeout(timer);
+      const t = ta.value.trim(); if (!t) return;
+      const payload = JSON.stringify({ src: src.client_id, text: t, choice });
+      const cur = S.entries.find((x) => x.client_id === cid);
+      if (cur) { cur.text = payload; cur.updated_at = Date.now(); }
+      else S.entries.push({ client_id: cid, stage: 2, step: 0, text: payload, created_at: Date.now(), updated_at: Date.now() });
+      enqueue({ t: 'save', uid: S.me.user.id, client_id: cid, stage: 2, step: 0, text: payload });
+    };
+    ta.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(persist, 800); });
+    ta.addEventListener('blur', persist);
+    const btns = CH.map(([v, label]) => el('button', { type: 'button', class: 'btn ghost small choice', 'aria-pressed': String(choice === v), disabled: !writable, onclick: () => {
+      if (!ta.value.trim()) return toast('Эхлээд өгүүлбэрээ бичнэ үү.');
+      choice = v; btns.forEach((b, i) => b.setAttribute('aria-pressed', String(CH[i][0] === v))); persist();
+    } }, label));
+    return el('li', { class: 'entry' },
+      el('div', { class: 'duo' },
+        el('div', {}, el('div', { class: 'col-label' }, 'Миний бичсэн'), el('p', {}, src.text)),
+        el('div', {}, el('div', { class: 'col-label' }, 'Өөр рүүгээ'), ta, sug && el('div', { class: 'save-state' }, 'Санал болгосон хувилбар. Өөрийн үгээр засаарай.'))),
+      el('p', { class: 'muted', style: 'margin:14px 0 8px' }, 'Энэ өгүүлбэр надад үнэн санагдаж байна уу?'),
+      el('div', { class: 'row' }, btns));
+  };
+
+  mount(
+    el('div', { class: 'top' }, el('button', { class: 'btn ghost small', onclick: showHome }, 'Аяллын зам руу'), el('span', { class: 'pill' }, S.me.access.tester ? 'Шалгагчийн горим' : `${S.me.access.day}-р өдөр / 30`)),
+    el('h2', {}, st.title), el('div', { class: 'muted', style: 'margin:-6px 0 14px' }, st.place),
+    el('p', {}, 'Бусдад чиглүүлсэн гомдол, бухимдлаа өөр рүүгээ чиглүүлж дахин уншаад үз. Энэ нь өөрийгөө шийтгэх биш, бусдад чиглүүлсэн бодол өөрийн дотоод ертөнцтэй хэрхэн холбогдохыг ажиглах дасгал юм.'),
+    el('p', { class: 'muted' }, 'Өгүүлбэр танд таарахгүй байвал «Үнэн биш» гэж сонгож болно. Дасгал хэт хүнд санагдвал түр зогсоож амарна уу.'),
+    srcs.length
+      ? el('ul', { class: 'entries' }, srcs.map(card))
+      : el('div', { class: 'panel' }, el('p', {}, 'Одоохондоо өөр рүү нь харах бичлэг алга. Эхлээд 1-р үе шатад бодол, гомдлоо бич.'), el('button', { class: 'btn', onclick: () => showStage(1) }, '1-р үе шат руу')),
+    el('div', { id: 'save-state', class: 'save-state' })
   );
   setStatus();
 }
