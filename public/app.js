@@ -150,12 +150,28 @@ async function logout() {
 
 function showNoAccess() {
   setWorld('night');
-  const a = S.me.access;
+  const a = S.me.access, p = S.me.payment || {};
   const text = a.status === 'expired'
-    ? `Таны 30 хоногийн аялал ${fmtDate(a.endsAt)}-нд дууссан. Бичсэн зүйлсээ доороос татаж авч болно.`
+    ? `Таны 30 хоногийн аялал ${fmtDate(a.endsAt)}-нд дууссан. Бичсэн зүйлсээ "Миний мэдээлэл" хэсгээс татаж авч болно.`
     : a.status === 'pending' ? `Таны эрх ${fmtDate(a.startsAt)}-нд эхэлнэ.`
-    : 'Таны 30 хоногийн эрх хараахан идэвхжээгүй байна. Төлбөр баталгаажсаны дараа аялал нээгдэнэ.';
-  mount(topBar(), el('div', { class: 'hero' }, el('h2', {}, `Сайн байна уу, ${S.me.user.name}`), el('p', { class: 'muted', style: 'margin:0 auto' }, text)));
+    : 'Аялалаа эхлэхийн тулд 30 хоногийн эрх идэвхжүүлнэ үү.';
+  const money = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '₮';
+  const pay = a.status === 'pending' ? null : el('div', { class: 'panel' },
+    el('h3', {}, a.status === 'expired' ? 'Аяллыг дахин эхлэх' : 'Эрх идэвхжүүлэх'),
+    p.price && (p.salePrice
+      ? el('p', {}, '30 хоногийн эрх: ', el('s', { class: 'muted' }, money(p.price)), ' ', el('strong', { style: 'color:var(--gold);font-size:1.3rem' }, money(p.salePrice)), ' (урьдчилсан хямдрал)')
+      : el('p', {}, `30 хоногийн эрхийн үнэ: ${money(p.price)}`)),
+    el('p', {}, 'Доорх QR кодоор төлбөрөө шилжүүлнэ үү. Гүйлгээний утга дээр өөрийн и-мэйл хаягийг яг доорх хэлбэрээр, алдаагүй бичнэ:'),
+    el('div', { class: 'quote' }, S.me.user.email),
+    el('button', { class: 'btn ghost small', onclick: async () => { try { await navigator.clipboard.writeText(S.me.user.email); toast('И-мэйл хуулагдлаа.'); } catch { toast('Хуулж чадсангүй. Гараар бичнэ үү.'); } } }, 'И-мэйлээ хуулах'),
+    el('img', { src: '/qr.png', alt: 'Төлбөрийн QR код', style: 'width:240px;max-width:100%;background:#fff;padding:10px;border-radius:12px;display:block;margin:14px 0' }),
+    p.requested
+      ? el('p', { class: 'muted' }, 'Таны хүсэлт хүлээгдэж байна. Төлбөр шалгагдмагц эрх нээгдэнэ. Доорх товчоор шалгана уу.')
+      : el('p', { class: 'muted' }, 'Төлсний дараа "Би төлсөн" товчийг дарна уу.'),
+    el('div', { class: 'row' },
+      !p.requested && el('button', { class: 'btn', onclick: async () => { try { await api('POST', '/api/payment-request'); await boot(); toast('Хүсэлт илгээгдлээ.'); } catch (e) { toast(e.message); } } }, 'Би төлсөн'),
+      el('button', { class: 'btn ghost', onclick: () => boot() }, 'Эрх нээгдсэн эсэхийг шалгах')));
+  mount(topBar(), el('div', { class: 'hero', style: 'padding:4vh 0 18px' }, el('h2', {}, `Сайн байна уу, ${S.me.user.name}`), el('p', { class: 'muted', style: 'margin:0 auto' }, text)), pay);
 }
 
 /* ===== Нүүр: аяллын зам ===== */
