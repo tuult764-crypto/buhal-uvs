@@ -7,9 +7,7 @@ const path = require('path');
 
 const DAY = 86400000;
 const PROD = process.env.NODE_ENV === 'production';
-const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
-if (!process.env.SESSION_SECRET) console.warn('SESSION_SECRET тохируулаагүй: сервер дахин асах бүрд хэрэглэгчид гарч, дахин нэвтэрнэ.');
 
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'data.db'));
 db.pragma('journal_mode = WAL');
@@ -32,6 +30,15 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE INDEX IF NOT EXISTS idx_entries_user_stage ON entries(user_id, stage);
 `);
 
+// Нэвтрэлтийн түлхүүр: орчны хувьсагч байхгүй бол өгөгдлийн санд нэг удаа үүсгэж хадгална (сервер дахин асахад нэвтрэлт алдагдахгүй)
+db.exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+let SECRET = process.env.SESSION_SECRET;
+if (!SECRET) {
+  const r = db.prepare("SELECT value FROM settings WHERE key='session_secret'").get();
+  if (r) SECRET = r.value;
+  else { SECRET = crypto.randomBytes(32).toString('hex'); db.prepare("INSERT INTO settings(key,value) VALUES('session_secret',?)").run(SECRET); }
+}
+
 const app = express();
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '100kb' }));
@@ -48,7 +55,7 @@ app.use((req, res, next) => {
 /* ---------- Нэвтрэлт ---------- */
 const b64 = (b) => Buffer.from(b).toString('base64url');
 const sign = (s) => crypto.createHmac('sha256', SECRET).update(s).digest('base64url');
-function makeToken(uid) { const p = `${uid}.${Date.now() + 30 * DAY}`; return `${p}.${sign(p)}`; }
+function makeToken(uid) { const p = `${uid}.${Date.now() + 60 * DAY}`; return `${p}.${sign(p)}`; }
 function readToken(t) {
   if (!t) return null;
   const [uid, exp, sig] = t.split('.');
@@ -63,7 +70,7 @@ function cookies(req) {
   (req.headers.cookie || '').split(';').forEach((p) => { const i = p.indexOf('='); if (i > 0) o[p.slice(0, i).trim()] = decodeURIComponent(p.slice(i + 1).trim()); });
   return o;
 }
-const setSession = (res, uid) => res.append('Set-Cookie', `bv=${makeToken(uid)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${30 * 86400}${PROD ? '; Secure' : ''}`);
+const setSession = (res, uid) => res.append('Set-Cookie', `bv=${makeToken(uid)}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${60 * 86400}${PROD ? '; Secure' : ''}`);
 const auth = (req, res, next) => {
   const uid = readToken(cookies(req).bv);
   if (!uid || !db.prepare('SELECT 1 FROM users WHERE id=?').get(uid)) return res.status(401).json({ error: 'Дахин нэвтэрнэ үү.' });
@@ -136,6 +143,7 @@ const PRICE = process.env.PRICE_MNT || '15000';
 const saleRaw = process.env.SALE_PRICE_MNT === undefined ? '10000' : process.env.SALE_PRICE_MNT;
 const SALE = Number(saleRaw) > 0 ? saleRaw : null;
 app.get('/api/me', auth, (req, res) => {
+  setSession(res, req.uid); // нэвтэрсэн хугацааг идэвхтэй ашиглах бүрд сунгана
   const u = db.prepare('SELECT id,name,email FROM users WHERE id=?').get(req.uid);
   const access = getAccess(req.uid);
   const requested = !!db.prepare("SELECT 1 FROM payments WHERE user_id=? AND status='pending'").get(req.uid);
