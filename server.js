@@ -9,7 +9,16 @@ const DAY = 86400000;
 const PROD = process.env.NODE_ENV === 'production';
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 
-const db = new Database(process.env.DB_PATH || path.join(__dirname, 'data.db'));
+// Өгөгдлийн сангийн файл. DB_PATH-ын хавтас байхгүй эсвэл бичих эрхгүй бол сервер унахгүй, түр хавтас руу шилжинэ.
+const fs = require('fs');
+const LOCAL_DB = path.join(__dirname, 'data.db');
+let DB_FILE = process.env.DB_PATH || LOCAL_DB;
+try { fs.mkdirSync(path.dirname(DB_FILE), { recursive: true }); fs.accessSync(path.dirname(DB_FILE), fs.constants.W_OK); }
+catch (e) { console.warn(` АНХААРУУЛГА: ${DB_FILE} хавтас руу бичиж чадсангүй (${e.code}). Түр хавтас ашиглаж байна: бүртгэл, бичлэг сервер дахин асахад устна. Render дээр диск холбоно уу.`); DB_FILE = LOCAL_DB; }
+let db;
+try { db = new Database(DB_FILE); }
+catch (e) { console.warn('АНХААРУУЛГА: өгөгдлийн санг нээж чадсангүй:', e.message, '. Түр хавтас руу шилжив.'); db = new Database(LOCAL_DB); }
+const PERSISTENT = !!process.env.DB_PATH && DB_FILE === process.env.DB_PATH;
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 db.exec(`
@@ -174,7 +183,7 @@ app.post('/api/entries', auth, active, (req, res) => {
   if (!CID.test(client_id || '')) return res.status(400).json({ error: 'Бичлэгийн дугаар буруу байна.' });
   if (![1, 2, 3, 4, 5].includes(stage) || !(step >= 0 && step <= 9)) return res.status(400).json({ error: 'Үе шат буруу байна.' });
   if (!text) return res.status(400).json({ error: 'Бичлэг хоосон байна.' });
-  if (text.length > 5000) return res.status(400).json({ error: 'Бичлэг хэт урт байна (5000 тэмдэгтээс бага).' });
+  if (text.length > 20000) return res.status(400).json({ error: 'Бичлэг хэт урт байна.' });
   const now = Date.now();
   const ex = db.prepare('SELECT stage FROM entries WHERE user_id=? AND client_id=?').get(req.uid, client_id);
   if (!req.access.tester && !canWrite(ex ? ex.stage : stage, req.access.day)) return res.status(403).json({ error: 'Энэ үе шатад одоогоор бичих боломжгүй байна.' });
@@ -240,4 +249,4 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Олдсонгүй.
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Бухал өвс ажиллаж байна: http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Бухал өвс ажиллаж байна: http://localhost:${PORT}. Өгөгдөл хадгалалт: ${PERSISTENT ? 'байнгын диск' : 'түр (сервер дахин асахад устна)'}`));

@@ -1,0 +1,180 @@
+:root{
+  --night:#130f2b; --dusk:#2a1b52; --violet:#6d4aaa; --lilac:#b99bdc;
+  --mist:#8fa8cc; --gold:#e9c46a; --warm:#f7e6b8; --ink:#ece6f7; --soft:#b9b0cf;
+  --glass:rgba(24,16,52,.62); --line:rgba(185,155,220,.28);
+  --serif:'Cormorant Garamond',Georgia,serif; --sans:'Noto Sans',system-ui,sans-serif;
+}
+/* Үе шат бүрийн ертөнцийн өнгө */
+body[data-world="night"]{--sky1:#0c0820;--sky2:#2b1a58;--glow:#b57edc}
+body[data-world="lake"]{--sky1:#0d1330;--sky2:#2a3f6e;--glow:#8fa8cc}
+body[data-world="bridge"]{--sky1:#17122e;--sky2:#4a3a7a;--glow:#c9b6e8}
+body[data-world="peak"]{--sky1:#120d2a;--sky2:#3a2468;--glow:#e9c46a}
+body[data-world="gate"]{--sky1:#2a1b3a;--sky2:#8a5e4a;--glow:#f7e6b8}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:var(--sans);color:var(--ink);background:var(--sky1);line-height:1.65;font-size:16px;
+  padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);transition:background 1.2s}
+.sky{position:fixed;inset:0;z-index:-3;
+  background:radial-gradient(ellipse at 50% 38%,var(--glow) -40%,transparent 55%),linear-gradient(var(--sky1),var(--sky2) 120%);
+  opacity:.95;transition:opacity 1.2s}
+.forest{position:fixed;left:0;right:0;bottom:0;width:100%;height:55vh;z-index:-2;pointer-events:none}
+#fx{position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none}
+#app{max-width:760px;margin:0 auto;padding:20px 18px 80px;min-height:100vh}
+h1,h2,h3{font-family:var(--serif);font-weight:600;line-height:1.15;margin:0 0 .5em}
+h1{font-size:clamp(2.6rem,9vw,4rem);letter-spacing:.01em}
+h2{font-size:clamp(1.8rem,6vw,2.4rem)}
+h3{font-size:1.4rem}
+p{margin:0 0 1em;max-width:62ch}
+.muted{color:var(--soft)}
+.view{animation:enter .7s ease both}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* Панель, талбар */
+.panel{background:var(--glass);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid var(--line);border-radius:18px;padding:22px}
+label{display:block;font-size:.95rem;color:var(--soft);margin:14px 0 6px}
+input,textarea{width:100%;font:inherit;color:var(--ink);background:rgba(10,7,28,.55);
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;transition:border-color .3s,box-shadow .3s}
+input:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(233,196,106,.18)}
+textarea{min-height:130px;resize:vertical;font-size:17px;line-height:1.75}
+::placeholder{color:#8a80a8}
+
+/* Товчлуур */
+.btn{font:inherit;font-weight:500;cursor:pointer;border:1px solid var(--gold);color:var(--night);
+  background:linear-gradient(135deg,var(--warm),var(--gold));padding:11px 22px;border-radius:999px;
+  transition:transform .25s,box-shadow .35s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 0 22px rgba(233,196,106,.55)}
+.btn:active{transform:scale(.97)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{box-shadow:0 0 16px rgba(185,155,220,.35);border-color:var(--lilac)}
+.btn.small{padding:6px 14px;font-size:.9rem}
+.btn.danger{background:transparent;color:#f0a6b4;border-color:#a8546a}
+:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.link{background:none;border:0;color:var(--lilac);cursor:pointer;font:inherit;text-decoration:underline;padding:0}
+
+/* Дээд цэс */
+.top{display:flex;justify-content:space-between;align-items:center;padding:6px 0 22px;gap:10px}
+.brand{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--warm)}
+.pill{font-size:.85rem;color:var(--soft);border:1px solid var(--line);border-radius:999px;padding:3px 12px}
+
+/* Нэвтрэх */
+.hero{text-align:center;padding:9vh 0 24px}
+.hero .tag{font-family:var(--serif);font-style:italic;font-size:1.4rem;color:var(--warm);margin-bottom:28px}
+.hero h1{color:var(--warm);text-shadow:0 0 40px rgba(233,196,106,.35)}
+.auth{max-width:400px;margin:0 auto}
+
+/* Аяллын зам: хуудасны онцгой хэсэг */
+.journey{position:relative;margin:10px 0 0;padding:10px 0 20px}
+.journey::before{content:"";position:absolute;left:50%;top:20px;bottom:30px;width:3px;transform:translateX(-50%);
+  background:linear-gradient(var(--gold),var(--lilac) 45%,rgba(185,155,220,.15));border-radius:3px;
+  transform-origin:top;animation:grow 2.2s ease-out both}
+@keyframes grow{from{transform:translateX(-50%) scaleY(0)}to{transform:translateX(-50%) scaleY(1)}}
+.stop{position:relative;width:calc(50% - 34px);margin:0 0 26px;padding:16px 18px;border-radius:16px;
+  background:var(--glass);border:1px solid var(--line);text-align:left;cursor:default;font:inherit;color:var(--ink);display:block}
+.stop:nth-child(odd){margin-right:auto}
+.stop:nth-child(even){margin-left:auto}
+.stop::after{content:"";position:absolute;top:22px;width:18px;height:18px;border-radius:50%;
+  background:var(--night);border:2px solid var(--lilac)}
+.stop:nth-child(odd)::after{right:-43px}
+.stop:nth-child(even)::after{left:-43px}
+.stop h3{font-size:1.2rem;margin:0 0 4px;color:var(--warm)}
+.stop .world{font-size:.85rem;color:var(--soft)}
+.stop .state{font-size:.85rem;margin-top:8px;color:var(--soft)}
+.stop.open{cursor:pointer;border-color:var(--gold);animation:lit 3.5s ease-in-out infinite}
+.stop.open::after{background:var(--gold);border-color:var(--warm);box-shadow:0 0 18px 5px rgba(233,196,106,.7)}
+.stop.locked{opacity:.55}
+@keyframes lit{50%{box-shadow:0 0 26px rgba(233,196,106,.28)}}
+.stop.open:hover{transform:translateY(-2px)}
+.traveler{position:absolute;left:50%;width:34px;height:46px;transform:translate(-50%,-50%);filter:drop-shadow(0 0 10px rgba(233,196,106,.8));pointer-events:none}
+@media (max-width:520px){
+  .stop{width:calc(100% - 46px)}.stop:nth-child(odd),.stop:nth-child(even){margin-left:auto;margin-right:0}
+  .journey::before{left:12px}
+  .stop:nth-child(odd)::after,.stop:nth-child(even)::after{left:-43px;right:auto}
+  .traveler{left:12px}
+}
+
+/* Бичлэгийн жагсаалт */
+.entries{list-style:none;margin:22px 0;padding:0;display:grid;gap:12px}
+.entry{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.entry p{white-space:pre-wrap;margin:0 0 10px;overflow-wrap:anywhere}
+.entry textarea{margin-bottom:10px}
+.save-state{font-size:.85rem;color:var(--soft)}
+.save-state.off{color:var(--gold)}
+.quote{font-family:var(--serif);font-size:1.3rem;font-style:italic;color:var(--warm);line-height:1.5;border-left:2px solid var(--gold);padding-left:16px;margin:18px 0}
+
+dialog{background:#1b1340;color:var(--ink);border:1px solid var(--line);border-radius:18px;padding:24px;max-width:420px;width:calc(100% - 36px)}
+dialog::backdrop{background:rgba(5,3,16,.7)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;
+  background:#241852;border:1px solid var(--gold);color:var(--warm);padding:10px 18px;border-radius:999px;transition:.4s;z-index:20;max-width:90%}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* 2-р үе шат */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:640px){.duo{grid-template-columns:1fr}}
+.col-label{font-size:.85rem;color:var(--soft);letter-spacing:.04em;margin-bottom:6px}
+.choice[aria-pressed="true"]{border-color:var(--gold);color:var(--warm);box-shadow:0 0 14px rgba(233,196,106,.35)}
+.btn:disabled,textarea:disabled{opacity:.55;cursor:not-allowed}
+
+/* Амьсгалын цагираг */
+.breath{text-align:center;margin-bottom:16px}
+.ring{width:110px;height:110px;border-radius:50%;margin:26px auto 22px;border:3px solid var(--gold);
+  background:radial-gradient(circle,rgba(233,196,106,.28),transparent 70%);
+  box-shadow:0 0 30px rgba(233,196,106,.5),inset 0 0 24px rgba(233,196,106,.25)}
+.ring-label{min-height:1.6em;color:var(--warm);font-family:var(--serif);font-size:1.3rem}
+
+/* Хүслийн карт */
+.wgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin:18px 0}
+.wcard{padding:24px 20px;min-height:140px;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-family:var(--serif);font-size:1.3rem;line-height:1.4;color:#fff;border:1px solid rgba(255,255,255,.35);
+  box-shadow:0 0 22px rgba(0,0,0,.3);overflow-wrap:anywhere}
+.c-violet{background:linear-gradient(135deg,#4b2f86,#9a74d0)}
+.c-gold{background:linear-gradient(135deg,#a8742a,#e9c46a);color:#2a1b00}
+.c-mist{background:linear-gradient(135deg,#3d5a8c,#9fb6dc)}
+.c-rose{background:linear-gradient(135deg,#8c3a6c,#e3a1c8)}
+.c-night{background:linear-gradient(135deg,#130f2b,#3a2468)}
+.s-round{border-radius:28px}.s-arch{border-radius:90px 90px 18px 18px}.s-leaf{border-radius:64px 8px 64px 8px}
+.swatch{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}
+.swatch[aria-pressed="true"]{border-color:var(--warm);box-shadow:0 0 14px rgba(233,196,106,.7)}
+details summary{cursor:pointer;color:var(--lilac)}
+
+/* Алтан карт */
+.finale{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:30px;
+  background:radial-gradient(circle at 50% 42%,#6b4a14 0%,#2a1b3a 48%,#0c0820 100%);animation:enter 1.6s ease both;overflow:hidden}
+.gscene{perspective:1200px}
+.gcard{position:relative;width:min(78vw,330px);aspect-ratio:3/4.4;transform-style:preserve-3d;
+  animation:introSpin 2.8s ease-out both,sway 8s ease-in-out 2.8s infinite alternate}
+.gface{position:absolute;inset:0;border-radius:20px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border:2px solid var(--warm);color:#2a1b00;padding:26px 22px;display:flex;flex-direction:column;overflow:hidden;
+  background:linear-gradient(145deg,#8a5a14,#e9c46a 38%,#fff2c2 52%,#e9c46a 66%,#9b6a1c);
+  box-shadow:0 0 60px rgba(233,196,106,.7),inset 0 0 30px rgba(255,255,255,.35)}
+.gface.front::after{content:"";position:absolute;inset:-20% -60%;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);animation:shine 4.5s ease-in-out 3s infinite}
+.gface.back{transform:rotateY(180deg);align-items:center;justify-content:center;font-size:5rem}
+.gtitle{font-family:var(--serif);font-size:2rem;font-weight:600;text-align:center;letter-spacing:.08em;margin-bottom:10px}
+.gface ol{margin:0 0 12px;padding-left:1.3em;font-size:1rem;line-height:1.7}
+.gquote{font-family:var(--serif);font-style:italic;font-size:1.1rem;line-height:1.4;margin:auto 0 0;text-align:center}
+.spark{position:absolute;width:4px;height:4px;border-radius:50%;background:var(--warm);box-shadow:0 0 10px 3px rgba(247,230,184,.8);animation:twinkle 3.5s ease-in-out infinite}
+@keyframes introSpin{from{transform:translateY(40px) scale(.3) rotateY(-540deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes sway{from{transform:rotateY(-28deg) rotateX(4deg) translateY(0)}to{transform:rotateY(28deg) rotateX(-4deg) translateY(-10px)}}
+@keyframes shine{0%,60%{transform:translateX(-60%)}100%{transform:translateX(60%)}}
+@keyframes twinkle{0%,100%{opacity:.1;transform:scale(.6)}50%{opacity:1;transform:scale(1.3)}}
+
+/* Хэвлэх: А4, нэг хуудсанд 6 карт */
+#print-sheet{display:none}
+@media print{
+  @page{size:A4;margin:10mm}
+  html,body{background:#fff!important}
+  body>*:not(#print-sheet){display:none!important}
+  #print-sheet{display:block}
+  .sheet{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,88mm);gap:6mm;width:190mm;break-after:page;page-break-after:always}
+  .sheet:last-child{break-after:auto;page-break-after:auto}
+  .pcard{-webkit-print-color-adjust:exact;print-color-adjust:exact;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:10mm 8mm 8mm;color:#fff;border:1.2mm double #f7e6b8;overflow:hidden;box-sizing:border-box}
+  .pcard.c-gold{color:#2a1b00}
+  .pcard.s-round{border-radius:8mm}.pcard.s-arch{border-radius:30mm 30mm 6mm 6mm}.pcard.s-leaf{border-radius:22mm 4mm 22mm 4mm}
+  .pbrand{position:absolute;top:4mm;left:0;right:0;font-size:7pt;letter-spacing:.25em;opacity:.85}
+  .ptext{font-family:'Cormorant Garamond',Georgia,serif;line-height:1.3;overflow-wrap:anywhere}
+  .p1{font-size:20pt}.p2{font-size:16pt}.p3{font-size:13pt}.p4{font-size:11pt}
+}
